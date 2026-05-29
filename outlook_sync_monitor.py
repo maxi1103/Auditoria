@@ -1,0 +1,323 @@
+import pythoncom
+import win32com.client
+import datetime
+import time
+import sys
+import os
+import json
+import traceback
+from pathlib import Path
+
+# --- Optional dependencies ---
+try:
+    import pywinauto
+    HAS_PYWAUTO = True
+except ImportError:
+    HAS_PYWAUTO = False
+
+try:
+    from PIL import ImageGrab
+    HAS_PIL = True
+except ImportError:
+    HAS_PIL = False
+
+try:
+    from fpdf import FPDF
+    HAS_FPDF = True
+except ImportError:
+    HAS_FPDF = False
+
+# --- Paths ---
+if getattr(sys, 'frozen', False):
+    BASE_DIR = Path(sys.executable).parent
+else:
+    BASE_DIR = Path.cwd()
+
+CAPTURES_DIR = BASE_DIR / "captures"
+LOG_JSONL = BASE_DIR / "eventos.jsonl"
+LOG_TXT = BASE_DIR / "outlook_log.txt"
+PDF_STATE = BASE_DIR / "pdf_state.json"
+PDF_OUTPUT = BASE_DIR / "informe_sincronizacion.pdf"
+
+CAPTURES_DIR.mkdir(exist_ok=True)
+
+
+# --- Logging ---
+def log_txt(message):
+    try:
+        with open(LOG_TXT, "a", encoding="utf-8") as f:
+            f.write(f"[{datetime.datetime.now():%Y-%m-%d %H:%M:%S}] - {message}\n")
+    except Exception:
+        pass
+
+
+def log_jsonl(entry):
+    entry["timestamp"] = datetime.datetime.now().isoformat()
+    try:
+        with open(LOG_JSONL, "a", encoding="utf-8") as f:
+            f.write(json.dumps(entry, ensure_ascii=False) + "\n")
+    except Exception:
+        pass
+
+
+# --- Context capture (PSR-style) ---
+def capture_context():
+    ctx = {
+        "ventana": "N/A",
+        "elemento_foco": "N/A",
+        "ruta_captura": ""
+    }
+
+    if not HAS_PYWAUTO or not HAS_PIL:
+        return ctx
+
+    try:
+        app = pywinauto.Application(backend="uia").connect(
+            title_re=".*Outlook.*", timeout=3
+        )
+        dlg = app.top_window()
+        ctx["ventana"] = dlg.window_text()
+
+        focused = dlg.get_focus()
+        if focused:
+            text = focused.window_text() or focused.automation_id() or ""
+            ctrl_type = focused.element_info.control_type or ""
+            if ctrl_type:
+                ctx["elemento_foco"] = f"{text} ({ctrl_type})" if text else f"({ctrl_type})"
+            else:
+                ctx["elemento_foco"] = text or "desconocido"
+
+        rect = dlg.rectangle()
+        if rect.width() > 0 and rect.height() > 0:
+            img = ImageGrab.grab(bbox=(
+                rect.left, rect.top, rect.right, rect.bottom
+            ))
+            ts = datetime.datetime.now().strftime("%Y%m%d_%H%M%S_%f")
+            filename = f"{ts}_outlook.png"
+            filepath = CAPTURES_DIR / filename
+            img.save(filepath)
+            ctx["ruta_captura"] = str(filepath)
+    except Exception:
+        pass
+
+    return ctx
+
+
+# --- PDF generation ---
+def leer_ultimo_timestamp_pdf():
+    if not PDF_STATE.exists():
+        return ""
+    try:
+        with open(PDF_STATE, "r") as f:
+            return json.load(f).get("last_timestamp", "")
+    except Exception:
+        return ""
+
+
+def guardar_ultimo_timestamp_pdf(ts):
+    try:
+        with open(PDF_STATE, "w") as f:
+            json.dump({"last_timestamp": ts}, f)
+    except Exception:
+        pass
+
+
+def generar_pdf():
+    if not HAS_FPDF:
+        return
+
+    last_ts = leer_ultimo_timestamp_pdf()
+
+    nuevas_entradas = []
+    if LOG_JSONL.exists():
+        with open(LOG_JSONL, "r", encoding="utf-8") as f:
+            for line in f:
+                line = line.strip()
+                if not line:
+                    continue
+                try:
+                    entry = json.loads(line)
+                    if entry.get("timestamp", "") > last_ts:
+                        nuevas_entradas.append(entry)
+                except Exception:
+                    continue
+
+    if not nuevas_entradas:
+        log_txt("Sin eventos nuevos para el PDF.")
+        return
+
+    pdf = FPDF()
+    pdf.add_page()
+    pdf.set_font("Helvetica", "B", 16)
+    pdf.cell(0, 10, "Informe de Sincronizacion - Outlook", new_x="LMARGIN", new_y="NEXT", align="C")
+    pdf.ln(5)
+
+    for entry in nuevas_entradas:
+        ts = entry.get("timestamp", "N/A")
+        accion = entry.get("accion", "N/A")
+
+        pdf.set_font("Helvetica", "B", 11)
+        pdf.cell(0, 7, f"{ts}  -  {accion}", new_x="LMARGIN", new_y="NEXT")
+
+        pdf.set_font("Helvetica", "", 9)
+        ventana = entry.get("ventana", "N/A")
+        elemento = entry.get("elemento_foco", "N/A")
+        pdf.cell(0, 5, f"Ventana: {ventana}", new_x="LMARGIN", new_y="NEXT")
+        pdf.cell(0, 5, f"Elemento: {elemento}", new_x="LMARGIN", new_y="NEXT")
+
+        ruta = entry.get("ruta_captura", "")
+        if ruta and Path(ruta).exists():
+            try:
+                pdf.image(ruta, x=10, w=180)
+                pdf.ln(2)
+            except Exception:
+                pdf.cell(0, 5, "[captura no disponible]", new_x="LMARGIN", new_y="NEXT")
+
+        pdf.ln(5)
+
+    try:
+        pdf.output(str(PDF_OUTPUT))
+    except Exception as e:
+        log_txt(f"Error al guardar PDF: {e}")
+        return
+
+    ultimo_ts = nuevas_entradas[-1].get("timestamp", "")
+    guardar_ultimo_timestamp_pdf(ultimo_ts)
+    log_txt(f"PDF generado: {PDF_OUTPUT.name} ({len(nuevas_entradas)} eventos nuevos)")
+
+
+# --- Event handler factory ---
+def build_handler(sync_obj):
+    class SyncHandler:
+        _sync_obj = sync_obj
+
+        def OnSyncStart(self, *args):
+            try:
+                name = self._sync_obj.Name
+            except Exception:
+                name = "Desconocido"
+            ctx = capture_context()
+            log_jsonl({
+                "accion": f"Inicio de Sincronizacion: {name}",
+                "ventana": ctx["ventana"],
+                "elemento_foco": ctx["elemento_foco"],
+                "ruta_captura": ctx["ruta_captura"]
+            })
+            log_txt(f"Inicio de Sincronizacion: {name}")
+
+        def OnSyncEnd(self, *args):
+            try:
+                name = self._sync_obj.Name
+            except Exception:
+                name = "Desconocido"
+            ctx = capture_context()
+            log_jsonl({
+                "accion": f"Fin de Sincronizacion: {name}",
+                "ventana": ctx["ventana"],
+                "elemento_foco": ctx["elemento_foco"],
+                "ruta_captura": ctx["ruta_captura"]
+            })
+            log_txt(f"Fin de Sincronizacion: {name}")
+
+    return SyncHandler
+
+
+# --- Outlook connection helpers ---
+def is_outlook_running():
+    try:
+        pythoncom.GetActiveObject("Outlook.Application")
+        return True
+    except pythoncom.com_error:
+        return False
+
+
+def subscribe_events(outlook):
+    namespace = outlook.GetNamespace("MAPI")
+    sync_objects = namespace.SyncObjects
+    handlers = []
+    for i in range(1, sync_objects.Count + 1):
+        sync_obj = sync_objects.Item(i)
+        try:
+            handler = win32com.client.WithEvents(sync_obj, build_handler(sync_obj))
+            handlers.append(handler)
+        except Exception as e:
+            log_txt(f"AVISO: No se pudo suscribir a '{sync_obj.Name}': {e}")
+    return handlers
+
+
+def connect():
+    if not is_outlook_running():
+        return None
+    try:
+        outlook = win32com.client.Dispatch("Outlook.Application")
+        _ = outlook.GetNamespace("MAPI").SyncObjects.Count
+        return outlook
+    except Exception as e:
+        log_txt(f"ERROR al conectar: {e}")
+        return None
+
+
+# --- Main ---
+def main():
+    pythoncom.CoInitialize()
+
+    generar_pdf()
+
+    outlook = None
+    handlers = []
+    running = True
+    ping_interval = 0
+
+    log_txt("Monitor de sincronizacion de Outlook iniciado.")
+
+    while running:
+        try:
+            if outlook is None:
+                outlook = connect()
+                if outlook is None:
+                    time.sleep(5)
+                    continue
+                handlers = subscribe_events(outlook)
+                if not handlers:
+                    log_txt("ERROR: No se pudo suscribir a ningun SyncObject.")
+                    del outlook
+                    outlook = None
+                    time.sleep(5)
+                    continue
+                log_txt("Monitor conectado a Outlook.")
+
+            pythoncom.PumpWaitingMessages()
+            time.sleep(0.5)
+
+            ping_interval += 1
+            if ping_interval >= 30:
+                ping_interval = 0
+                if not is_outlook_running():
+                    log_txt("Conexion perdida (Outlook cerrado). Reintentando en 5s...")
+                    handlers.clear()
+                    del outlook
+                    outlook = None
+                    time.sleep(5)
+
+        except (pythoncom.com_error, AttributeError):
+            log_txt("Conexion perdida (error COM). Reintentando en 5s...")
+            handlers.clear()
+            if outlook is not None:
+                del outlook
+                outlook = None
+            time.sleep(5)
+
+        except KeyboardInterrupt:
+            log_txt("Monitor detenido por el usuario.")
+            generar_pdf()
+            running = False
+
+        except Exception:
+            log_txt(f"ERROR inesperado: {traceback.format_exc()}")
+            time.sleep(5)
+
+    pythoncom.CoUninitialize()
+
+
+if __name__ == "__main__":
+    main()

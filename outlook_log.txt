@@ -1,0 +1,2 @@
+[2026-05-29 14:55:19] - Monitor de sincronizacion de Outlook iniciado.
+[2026-05-29 14:59:49] - Monitor de sincronizacion de Outlook iniciado.
