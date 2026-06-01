@@ -38,8 +38,10 @@ LOG_JSONL = BASE_DIR / "eventos.jsonl"
 LOG_TXT = BASE_DIR / "outlook_log.txt"
 PDF_STATE = BASE_DIR / "pdf_state.json"
 PDF_OUTPUT = BASE_DIR / "informe_sincronizacion.pdf"
+REPORTS_DIR = BASE_DIR / "reportes"
 
 CAPTURES_DIR.mkdir(exist_ok=True)
+REPORTS_DIR.mkdir(exist_ok=True)
 
 
 # --- Logging ---
@@ -77,16 +79,21 @@ def capture_context():
         )
         dlg = app.top_window()
         ctx["ventana"] = dlg.window_text()
+    except Exception as e:
+        log_txt(f"capture_context ventana: {e}")
+        return ctx
 
-        focused = dlg.get_focus()
-        if focused:
-            text = focused.window_text() or focused.automation_id() or ""
-            ctrl_type = focused.element_info.control_type or ""
-            if ctrl_type:
-                ctx["elemento_foco"] = f"{text} ({ctrl_type})" if text else f"({ctrl_type})"
-            else:
-                ctx["elemento_foco"] = text or "desconocido"
+    try:
+        import win32gui
+        hwnd = win32gui.GetForegroundWindow()
+        if hwnd:
+            text = win32gui.GetWindowText(hwnd)
+            cls = win32gui.GetClassName(hwnd)
+            ctx["elemento_foco"] = f"{text} ({cls})" if text else f"({cls})"
+    except Exception as e:
+        log_txt(f"capture_context foco: {e}")
 
+    try:
         rect = dlg.rectangle()
         if rect.width() > 0 and rect.height() > 0:
             img = ImageGrab.grab(bbox=(
@@ -97,8 +104,8 @@ def capture_context():
             filepath = CAPTURES_DIR / filename
             img.save(filepath)
             ctx["ruta_captura"] = str(filepath)
-    except Exception:
-        pass
+    except Exception as e:
+        log_txt(f"capture_context captura: {e}")
 
     return ctx
 
@@ -186,6 +193,79 @@ def generar_pdf():
     log_txt(f"PDF generado: {PDF_OUTPUT.name} ({len(nuevas_entradas)} eventos nuevos)")
 
 
+def limpiar_jsonl():
+    try:
+        open(LOG_JSONL, "w", encoding="utf-8").close()
+    except Exception:
+        pass
+
+
+def flush_y_generar_pdf():
+    try:
+        from fpdf import FPDF
+    except ImportError:
+        log_txt("flush: fpdf2 no disponible.")
+        return
+
+    entradas = []
+    if LOG_JSONL.exists():
+        with open(LOG_JSONL, "r", encoding="utf-8") as f:
+            for line in f:
+                line = line.strip()
+                if not line:
+                    continue
+                try:
+                    entradas.append(json.loads(line))
+                except Exception:
+                    continue
+
+    if not entradas:
+        log_txt("flush: Sin eventos en el log.")
+        return
+
+    now = datetime.datetime.now()
+    filename = f"informe_{now:%Y%m%d_%H%M%S}.pdf"
+    output_path = REPORTS_DIR / filename
+
+    pdf = FPDF()
+    pdf.add_page()
+    pdf.set_font("Helvetica", "B", 16)
+    pdf.cell(0, 10, "Informe de Sincronizacion - Outlook", new_x="LMARGIN", new_y="NEXT", align="C")
+    pdf.ln(5)
+
+    for entry in entradas:
+        ts = entry.get("timestamp", "N/A")
+        accion = entry.get("accion", "N/A")
+
+        pdf.set_font("Helvetica", "B", 11)
+        pdf.cell(0, 7, f"{ts}  -  {accion}", new_x="LMARGIN", new_y="NEXT")
+
+        pdf.set_font("Helvetica", "", 9)
+        ventana = entry.get("ventana", "N/A")
+        elemento = entry.get("elemento_foco", "N/A")
+        pdf.cell(0, 5, f"Ventana: {ventana}", new_x="LMARGIN", new_y="NEXT")
+        pdf.cell(0, 5, f"Elemento: {elemento}", new_x="LMARGIN", new_y="NEXT")
+
+        ruta = entry.get("ruta_captura", "")
+        if ruta and Path(ruta).exists():
+            try:
+                pdf.image(ruta, x=10, w=180)
+                pdf.ln(2)
+            except Exception:
+                pdf.cell(0, 5, "[captura no disponible]", new_x="LMARGIN", new_y="NEXT")
+
+        pdf.ln(5)
+
+    try:
+        pdf.output(str(output_path))
+    except Exception as e:
+        log_txt(f"flush: Error al guardar PDF: {e}")
+        return
+
+    limpiar_jsonl()
+    log_txt(f"flush: PDF generado: {filename} ({len(entradas)} eventos), jsonl limpiado.")
+
+
 # --- Event handler factory ---
 def build_handler(sync_obj):
     class SyncHandler:
@@ -262,6 +342,7 @@ def main():
     pythoncom.CoInitialize()
 
     generar_pdf()
+    flush_y_generar_pdf()
 
     outlook = None
     handlers = []
@@ -310,6 +391,7 @@ def main():
         except KeyboardInterrupt:
             log_txt("Monitor detenido por el usuario.")
             generar_pdf()
+            flush_y_generar_pdf()
             running = False
 
         except Exception:
