@@ -2,7 +2,6 @@ import subprocess
 import sys
 import datetime
 import json
-import os
 from pathlib import Path
 
 # --- Paths (same as outlook_sync_monitor.py) ---
@@ -11,7 +10,6 @@ if getattr(sys, 'frozen', False):
 else:
     BASE_DIR = Path.cwd()
 
-CAPTURES_DIR = BASE_DIR / "captures"
 LOG_JSONL = BASE_DIR / "eventos.jsonl"
 LOG_TXT = BASE_DIR / "outlook_log.txt"
 REPORTS_DIR = BASE_DIR / "reportes"
@@ -27,12 +25,12 @@ def log_txt(message):
         pass
 
 
-# --- PDF generation ---
+# --- PDF generation (standalone copy from outlook_sync_monitor.py) ---
 def generar_pdf():
     try:
         from fpdf import FPDF
     except ImportError:
-        log_txt("close_monitor: fpdf2 no disponible, no se genera PDF.")
+        log_txt("close_monitor: fpdf2 no disponible.")
         return
 
     entradas = []
@@ -90,15 +88,12 @@ def generar_pdf():
         log_txt(f"close_monitor: Error al guardar PDF: {e}")
         return
 
-    limpiar_jsonl()
-    log_txt(f"close_monitor: PDF generado: {filename} ({len(entradas)} eventos), jsonl limpiado.")
-
-
-def limpiar_jsonl():
     try:
         open(LOG_JSONL, "w", encoding="utf-8").close()
     except Exception:
         pass
+
+    log_txt(f"close_monitor: PDF generado: {filename} ({len(entradas)} eventos), jsonl limpiado.")
 
 
 # --- Kill monitor process ---

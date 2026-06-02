@@ -36,8 +36,6 @@ else:
 CAPTURES_DIR = BASE_DIR / "captures"
 LOG_JSONL = BASE_DIR / "eventos.jsonl"
 LOG_TXT = BASE_DIR / "outlook_log.txt"
-PDF_STATE = BASE_DIR / "pdf_state.json"
-PDF_OUTPUT = BASE_DIR / "informe_sincronizacion.pdf"
 REPORTS_DIR = BASE_DIR / "reportes"
 
 CAPTURES_DIR.mkdir(exist_ok=True)
@@ -81,6 +79,7 @@ def capture_context():
         ctx["ventana"] = dlg.window_text()
     except Exception as e:
         log_txt(f"capture_context ventana: {e}")
+        print(f"capture_context ventana: {e}")
         return ctx
 
     try:
@@ -92,6 +91,7 @@ def capture_context():
             ctx["elemento_foco"] = f"{text} ({cls})" if text else f"({cls})"
     except Exception as e:
         log_txt(f"capture_context foco: {e}")
+        print(f"capture_context foco: {e}")
 
     try:
         rect = dlg.rectangle()
@@ -106,105 +106,14 @@ def capture_context():
             ctx["ruta_captura"] = str(filepath)
     except Exception as e:
         log_txt(f"capture_context captura: {e}")
+        print(f"capture_context captura: {e}")
 
     return ctx
 
 
 # --- PDF generation ---
-def leer_ultimo_timestamp_pdf():
-    if not PDF_STATE.exists():
-        return ""
-    try:
-        with open(PDF_STATE, "r") as f:
-            return json.load(f).get("last_timestamp", "")
-    except Exception:
-        return ""
-
-
-def guardar_ultimo_timestamp_pdf(ts):
-    try:
-        with open(PDF_STATE, "w") as f:
-            json.dump({"last_timestamp": ts}, f)
-    except Exception:
-        pass
-
-
 def generar_pdf():
     if not HAS_FPDF:
-        return
-
-    last_ts = leer_ultimo_timestamp_pdf()
-
-    nuevas_entradas = []
-    if LOG_JSONL.exists():
-        with open(LOG_JSONL, "r", encoding="utf-8") as f:
-            for line in f:
-                line = line.strip()
-                if not line:
-                    continue
-                try:
-                    entry = json.loads(line)
-                    if entry.get("timestamp", "") > last_ts:
-                        nuevas_entradas.append(entry)
-                except Exception:
-                    continue
-
-    if not nuevas_entradas:
-        log_txt("Sin eventos nuevos para el PDF.")
-        return
-
-    pdf = FPDF()
-    pdf.add_page()
-    pdf.set_font("Helvetica", "B", 16)
-    pdf.cell(0, 10, "Informe de Sincronizacion - Outlook", new_x="LMARGIN", new_y="NEXT", align="C")
-    pdf.ln(5)
-
-    for entry in nuevas_entradas:
-        ts = entry.get("timestamp", "N/A")
-        accion = entry.get("accion", "N/A")
-
-        pdf.set_font("Helvetica", "B", 11)
-        pdf.cell(0, 7, f"{ts}  -  {accion}", new_x="LMARGIN", new_y="NEXT")
-
-        pdf.set_font("Helvetica", "", 9)
-        ventana = entry.get("ventana", "N/A")
-        elemento = entry.get("elemento_foco", "N/A")
-        pdf.cell(0, 5, f"Ventana: {ventana}", new_x="LMARGIN", new_y="NEXT")
-        pdf.cell(0, 5, f"Elemento: {elemento}", new_x="LMARGIN", new_y="NEXT")
-
-        ruta = entry.get("ruta_captura", "")
-        if ruta and Path(ruta).exists():
-            try:
-                pdf.image(ruta, x=10, w=180)
-                pdf.ln(2)
-            except Exception:
-                pdf.cell(0, 5, "[captura no disponible]", new_x="LMARGIN", new_y="NEXT")
-
-        pdf.ln(5)
-
-    try:
-        pdf.output(str(PDF_OUTPUT))
-    except Exception as e:
-        log_txt(f"Error al guardar PDF: {e}")
-        return
-
-    ultimo_ts = nuevas_entradas[-1].get("timestamp", "")
-    guardar_ultimo_timestamp_pdf(ultimo_ts)
-    log_txt(f"PDF generado: {PDF_OUTPUT.name} ({len(nuevas_entradas)} eventos nuevos)")
-
-
-def limpiar_jsonl():
-    try:
-        open(LOG_JSONL, "w", encoding="utf-8").close()
-    except Exception:
-        pass
-
-
-def flush_y_generar_pdf():
-    try:
-        from fpdf import FPDF
-    except ImportError:
-        log_txt("flush: fpdf2 no disponible.")
         return
 
     entradas = []
@@ -220,7 +129,8 @@ def flush_y_generar_pdf():
                     continue
 
     if not entradas:
-        log_txt("flush: Sin eventos en el log.")
+        log_txt("Sin eventos en el log, no se genera PDF.")
+        print("Sin eventos en el log, no se genera PDF.")
         return
 
     now = datetime.datetime.now()
@@ -259,11 +169,16 @@ def flush_y_generar_pdf():
     try:
         pdf.output(str(output_path))
     except Exception as e:
-        log_txt(f"flush: Error al guardar PDF: {e}")
+        log_txt(f"Error al guardar PDF: {e}")
         return
 
-    limpiar_jsonl()
-    log_txt(f"flush: PDF generado: {filename} ({len(entradas)} eventos), jsonl limpiado.")
+    try:
+        open(LOG_JSONL, "w", encoding="utf-8").close()
+    except Exception:
+        pass
+
+    log_txt(f"PDF generado: {filename} ({len(entradas)} eventos), jsonl limpiado.")
+    print(f"PDF generado: {filename} ({len(entradas)} eventos), jsonl limpiado.")
 
 
 # --- Event handler factory ---
@@ -284,6 +199,7 @@ def build_handler(sync_obj):
                 "ruta_captura": ctx["ruta_captura"]
             })
             log_txt(f"Inicio de Sincronizacion: {name}")
+            print(f"Inicio de Sincronizacion: {name}")
 
         def OnSyncEnd(self, *args):
             try:
@@ -298,6 +214,7 @@ def build_handler(sync_obj):
                 "ruta_captura": ctx["ruta_captura"]
             })
             log_txt(f"Fin de Sincronizacion: {name}")
+            print(f"Fin de Sincronizacion: {name}")
 
     return SyncHandler
 
@@ -322,6 +239,7 @@ def subscribe_events(outlook):
             handlers.append(handler)
         except Exception as e:
             log_txt(f"AVISO: No se pudo suscribir a '{sync_obj.Name}': {e}")
+            print(f"AVISO: No se pudo suscribir a '{sync_obj.Name}': {e}")
     return handlers
 
 
@@ -334,6 +252,7 @@ def connect():
         return outlook
     except Exception as e:
         log_txt(f"ERROR al conectar: {e}")
+        print(f"ERROR al conectar: {e}")
         return None
 
 
@@ -342,7 +261,6 @@ def main():
     pythoncom.CoInitialize()
 
     generar_pdf()
-    flush_y_generar_pdf()
 
     outlook = None
     handlers = []
@@ -350,7 +268,7 @@ def main():
     ping_interval = 0
 
     log_txt("Monitor de sincronizacion de Outlook iniciado.")
-
+    print("Monitor de sincronizacion de Outlook iniciado.")
     while running:
         try:
             if outlook is None:
@@ -361,11 +279,13 @@ def main():
                 handlers = subscribe_events(outlook)
                 if not handlers:
                     log_txt("ERROR: No se pudo suscribir a ningun SyncObject.")
+                    print("ERROR: No se pudo suscribir a ningun SyncObject.")
                     del outlook
                     outlook = None
                     time.sleep(5)
                     continue
                 log_txt("Monitor conectado a Outlook.")
+                print("Monitor conectado a Outlook.")
 
             pythoncom.PumpWaitingMessages()
             time.sleep(0.5)
@@ -375,6 +295,7 @@ def main():
                 ping_interval = 0
                 if not is_outlook_running():
                     log_txt("Conexion perdida (Outlook cerrado). Reintentando en 5s...")
+                    print("Conexion perdida (Outlook cerrado). Reintentando en 5s...")
                     handlers.clear()
                     del outlook
                     outlook = None
@@ -382,6 +303,7 @@ def main():
 
         except (pythoncom.com_error, AttributeError):
             log_txt("Conexion perdida (error COM). Reintentando en 5s...")
+            print("Conexion perdida (error COM). Reintentando en 5s...")
             handlers.clear()
             if outlook is not None:
                 del outlook
@@ -390,12 +312,13 @@ def main():
 
         except KeyboardInterrupt:
             log_txt("Monitor detenido por el usuario.")
+            print("Monitor detenido por el usuario.")
             generar_pdf()
-            flush_y_generar_pdf()
             running = False
 
         except Exception:
             log_txt(f"ERROR inesperado: {traceback.format_exc()}")
+            print(f"ERROR inesperado: {traceback.format_exc()}")
             time.sleep(5)
 
     pythoncom.CoUninitialize()

@@ -75,3 +75,98 @@
 [2026-06-01 15:54:09] - close_monitor: Al terminar 'outlook_sync_monitor_noconsole.exe': ERROR: no se encontr¢ el proceso "outlook_sync_monitor_noconsole.exe".
 [2026-06-01 15:54:10] - close_monitor: Sin eventos en el log, no se genera PDF.
 [2026-06-01 15:54:10] - close_monitor: Cierre completado.
+[2026-06-01 16:17:50] - Sin eventos nuevos para el PDF.
+[2026-06-01 16:17:50] - flush: Sin eventos en el log.
+[2026-06-01 16:17:50] - Monitor de sincronizacion de Outlook iniciado.
+[2026-06-01 16:18:15] - Monitor conectado a Outlook.
+[2026-06-01 16:18:20] - capture_context ventana: There are 2 elements that match the criteria {'title_re': '.*Outlook.*', 'backend': 'uia', 'visible_only': False}
+[2026-06-01 16:18:20] - Inicio de Sincronizacion: Todas las cuentas
+[2026-06-01 16:18:22] - Fin de Sincronizacion: Todas las cuentas
+[2026-06-01 16:18:23] - Inicio de Sincronizacion: Todas las cuentas
+[2026-06-01 16:18:23] - capture_context ventana: There are 2 elements that match the criteria {'title_re': '.*Outlook.*', 'backend': 'uia', 'visible_only': False}
+[2026-06-01 16:18:23] - Fin de Sincronizacion: Todas las cuentas
+[2026-06-01 16:18:24] - capture_context ventana: There are 2 elements that match the criteria {'title_re': '.*Outlook.*', 'backend': 'uia', 'visible_only': False}
+[2026-06-01 16:18:24] - Inicio de Sincronizacion: Todas las cuentas
+[2026-06-01 16:18:25] - Fin de Sincronizacion: Todas las cuentas
+[2026-06-01 16:18:26] - capture_context ventana: There are 2 elements that match the criteria {'title_re': '.*Outlook.*', 'backend': 'uia', 'visible_only': False}
+[2026-06-01 16:18:26] - Inicio de Sincronizacion: Todas las cuentas
+[2026-06-01 16:18:27] - Fin de Sincronizacion: Todas las cuentas
+[2026-06-01 16:18:28] - Inicio de Sincronizacion: Todas las cuentas
+[2026-06-01 16:18:29] - capture_context ventana: There are 2 elements that match the criteria {'title_re': '.*Outlook.*', 'backend': 'uia', 'visible_only': False}
+[2026-06-01 16:18:29] - Fin de Sincronizacion: Todas las cuentas
+[2026-06-01 16:18:37] - close_monitor: Iniciando cierre del monitor.
+[2026-06-01 16:18:37] - close_monitor: Proceso 'outlook_sync_monitor.exe' terminado.
+[2026-06-01 16:18:37] - close_monitor: Al terminar 'outlook_sync_monitor_noconsole.exe': ERROR: no se encontr¢ el proceso "outlook_sync_monitor_noconsole.exe".
+[2026-06-01 16:18:40] - close_monitor: PDF generado: informe_20260601_161839.pdf (10 eventos), jsonl limpiado.
+[2026-06-01 16:18:40] - close_monitor: Cierre completado.
+[2026-06-02 15:15:20] - Sin eventos nuevos para el PDF.
+[2026-06-02 15:15:20] - flush: Sin eventos en el log.
+[2026-06-02 15:15:20] - Monitor de sincronizacion de Outlook iniciado.
+[2026-06-02 15:15:21] - Monitor conectado a Outlook.
+[2026-06-02 15:15:30] - capture_context ventana: There are 2 elements that match the criteria {'title_re': '.*Outlook.*', 'backend': 'uia', 'visible_only': False}
+[2026-06-02 15:15:30] - Inicio de Sincronizacion: Todas las cuentas
+[2026-06-02 15:15:31] - Fin de Sincronizacion: Todas las cuentas
+[2026-06-02 15:15:36] - Conexion perdida (Outlook cerrado). Reintentando en 5s...
+[2026-06-02 15:18:06] - Monitor conectado a Outlook.
+[2026-06-02 15:18:08] - close_monitor: Iniciando cierre del monitor.
+[2026-06-02 15:18:08] - close_monitor: Proceso 'outlook_sync_monitor.exe' terminado.
+[2026-06-02 15:18:08] - close_monitor: Al terminar 'outlook_sync_monitor_noconsole.exe': ERROR: no se encontr¢ el proceso "outlook_sync_monitor_noconsole.exe".
+[2026-06-02 15:18:12] - close_monitor: PDF generado: informe_20260602_151812.pdf (2 eventos), jsonl limpiado.
+[2026-06-02 15:18:12] - close_monitor: Cierre completado.
+[2026-06-02 15:32:28] - Sin eventos nuevos para el PDF.
+[2026-06-02 15:32:28] - flush: Sin eventos en el log.
+[2026-06-02 15:32:28] - Monitor de sincronizacion de Outlook iniciado.
+[2026-06-02 16:00:31] - Sin eventos nuevos para el PDF.
+[2026-06-02 16:00:31] - Monitor de sincronizacion de Outlook iniciado.
+[2026-06-02 16:45:33] - Sin eventos en el log, no se genera PDF.
+[2026-06-02 16:45:33] - Monitor de sincronizacion de Outlook iniciado.
+[2026-06-02 16:45:34] - Monitor conectado a Outlook.
+[2026-06-02 16:45:40] - Inicio de Sincronizacion: Todas las cuentas
+[2026-06-02 16:45:40] - capture_context ventana: There are 2 elements that match the criteria {'title_re': '.*Outlook.*', 'backend': 'uia', 'visible_only': False}
+[2026-06-02 16:45:40] - Fin de Sincronizacion: Todas las cuentas
+[2026-06-02 16:46:09] - Monitor detenido por el usuario.
+[2026-06-02 16:46:09] - PDF generado: informe_20260602_164609.pdf (2 eventos), jsonl limpiado.
+[2026-06-02 16:47:21] - Sin eventos en el log, no se genera PDF.
+[2026-06-02 16:47:21] - Monitor de sincronizacion de Outlook iniciado.
+[2026-06-02 16:47:21] - Monitor conectado a Outlook.
+[2026-06-02 16:47:27] - Inicio de Sincronizacion: Todas las cuentas
+[2026-06-02 16:47:27] - capture_context ventana: There are 2 elements that match the criteria {'title_re': '.*Outlook.*', 'backend': 'uia', 'visible_only': False}
+[2026-06-02 16:47:27] - Fin de Sincronizacion: Todas las cuentas
+[2026-06-02 16:47:29] - Inicio de Sincronizacion: Todas las cuentas
+[2026-06-02 16:47:29] - capture_context ventana: There are 2 elements that match the criteria {'title_re': '.*Outlook.*', 'backend': 'uia', 'visible_only': False}
+[2026-06-02 16:47:29] - Fin de Sincronizacion: Todas las cuentas
+[2026-06-02 16:48:08] - PDF generado: informe_20260602_164808.pdf (4 eventos), jsonl limpiado.
+[2026-06-02 16:48:08] - Monitor de sincronizacion de Outlook iniciado.
+[2026-06-02 16:48:08] - Monitor conectado a Outlook.
+[2026-06-02 16:48:13] - capture_context ventana: There are 2 elements that match the criteria {'title_re': '.*Outlook.*', 'backend': 'uia', 'visible_only': False}
+[2026-06-02 16:48:13] - Inicio de Sincronizacion: Todas las cuentas
+[2026-06-02 16:48:14] - Fin de Sincronizacion: Todas las cuentas
+[2026-06-02 16:48:15] - capture_context ventana: There are 2 elements that match the criteria {'title_re': '.*Outlook.*', 'backend': 'uia', 'visible_only': False}
+[2026-06-02 16:48:15] - Inicio de Sincronizacion: Todas las cuentas
+[2026-06-02 16:48:16] - Fin de Sincronizacion: Todas las cuentas
+[2026-06-02 16:49:10] - PDF generado: informe_20260602_164910.pdf (4 eventos), jsonl limpiado.
+[2026-06-02 16:49:10] - Monitor de sincronizacion de Outlook iniciado.
+[2026-06-02 16:49:10] - Monitor conectado a Outlook.
+[2026-06-02 16:49:13] - Inicio de Sincronizacion: Todas las cuentas
+[2026-06-02 16:49:14] - Fin de Sincronizacion: Todas las cuentas
+[2026-06-02 16:49:15] - Inicio de Sincronizacion: Todas las cuentas
+[2026-06-02 16:49:16] - capture_context ventana: There are 2 elements that match the criteria {'title_re': '.*Outlook.*', 'backend': 'uia', 'visible_only': False}
+[2026-06-02 16:49:16] - Fin de Sincronizacion: Todas las cuentas
+[2026-06-02 16:49:39] - Inicio de Sincronizacion: Todas las cuentas
+[2026-06-02 16:49:40] - Fin de Sincronizacion: Todas las cuentas
+[2026-06-02 16:50:02] - Inicio de Sincronizacion: Todas las cuentas
+[2026-06-02 16:50:03] - Fin de Sincronizacion: Todas las cuentas
+[2026-06-02 16:50:45] - Monitor detenido por el usuario.
+[2026-06-02 16:50:46] - PDF generado: informe_20260602_165045.pdf (8 eventos), jsonl limpiado.
+[2026-06-02 16:51:12] - Sin eventos en el log, no se genera PDF.
+[2026-06-02 16:51:12] - Monitor de sincronizacion de Outlook iniciado.
+[2026-06-02 16:51:12] - Monitor conectado a Outlook.
+[2026-06-02 16:51:15] - Inicio de Sincronizacion: Todas las cuentas
+[2026-06-02 16:51:16] - Fin de Sincronizacion: Todas las cuentas
+[2026-06-02 16:51:17] - Inicio de Sincronizacion: Todas las cuentas
+[2026-06-02 16:51:19] - Fin de Sincronizacion: Todas las cuentas
+[2026-06-02 16:51:20] - Inicio de Sincronizacion: Todas las cuentas
+[2026-06-02 16:51:21] - Fin de Sincronizacion: Todas las cuentas
+[2026-06-02 16:53:27] - PDF generado: informe_20260602_165327.pdf (6 eventos), jsonl limpiado.
+[2026-06-02 16:53:27] - Monitor de sincronizacion de Outlook iniciado.
+[2026-06-02 16:53:27] - Monitor conectado a Outlook.

@@ -1,116 +1,69 @@
 # Outlook Sync Monitor
 
-Monitorea eventos de sincronizacion (Enviar/Recibir) de Microsoft Outlook, captura contexto visual (estilo PSR) y genera informes PDF.
+Monitorea las sincronizaciones de Outlook 2010 (eventos `SyncStart`/`SyncEnd`) y captura contexto visual tipo PSR (ventana activa, elemento enfocado, screenshot). Genera informes PDF con todo el historial capturado.
 
-## Requisitos
+## Archivos
 
-- Windows 7 o superior
-- Microsoft Outlook 2010 o superior
-- No requiere Python instalado (usar el `.exe`)
+| Archivo | Descripción |
+|---|---|
+| `outlook_sync_monitor.py` | Script principal: monitoreo + captura + PDF |
+| `close_monitor.py` | Detiene el monitor y genera PDF con los datos pendientes |
+| `eventos.jsonl` | Log estructurado de eventos (JSON Lines) |
+| `captures/` | Capturas de pantalla del outlook (PNG) |
+| `reportes/` | Informes PDF generados (`informe_YYYYMMDD_HHMMSS.pdf`) |
+| `outlook_log.txt` | Log de texto plano para debug |
 
-## Instalacion
+## Componentes
 
-### Ejecutable (recomendado)
+### outlook_sync_monitor.py
+- Se conecta a Outlook vía COM (pywin32).
+- Escucha `SyncStart`/`SyncEnd` en todos los `SyncObjects`.
+- En cada evento captura: ventana activa, elemento enfocado (win32gui), screenshot del Outlook.
+- Guarda en `eventos.jsonl` (append, crash-safe).
+- **Al iniciar**: si `eventos.jsonl` tiene datos (ej. post-reboot), genera PDF y lo limpia.
+- **Ctrl+C**: genera PDF con los datos restantes y limpia `eventos.jsonl`.
 
-Descarga de `dist/`:
-
-| Archivo | Descripcion |
-|---------|-------------|
-| `outlook_sync_monitor.exe` | Con ventana de consola (ver estado y Ctrl+C) |
-| `outlook_sync_monitor_noconsole.exe` | Sin ventana (segundo plano, matar con Task Manager) |
-
-### Script Python
-
-```powershell
-pip install pywin32 pywinauto pillow fpdf2
-python outlook_sync_monitor.py
-```
+### close_monitor.py
+- Mata el proceso `outlook_sync_monitor.exe` o `outlook_sync_monitor_noconsole.exe`.
+- Genera PDF con todos los eventos pendientes y limpia `eventos.jsonl`.
 
 ## Uso
 
-1. Asegurate de que Outlook este abierto.
-2. Ejecuta el `.exe` deseado.
-3. Presiona `Enviar/Recibir` en Outlook o espera una sincronizacion automatica.
-4. Para detener:
-   - **Version console**: Presiona `Ctrl+C` en la ventana.
-   - **Version noconsole**: Usa el Administrador de Tareas (Task Manager).
+```powershell
+# Directo (requiere dependencias)
+python outlook_sync_monitor.py
+python close_monitor.py
 
-## Archivos generados
-
-| Archivo/Carpeta | Descripcion |
-|-----------------|-------------|
-| `outlook_log.txt` | Log de texto plano (eventos y estado) |
-| `eventos.jsonl` | Log estructurado en JSON Lines (una linea por evento) |
-| `captures/` | Capturas de pantalla `.png` del area de Outlook |
-| `informe_sincronizacion.pdf` | Informe PDF con eventos y capturas |
-| `pdf_state.json` | Estado para generar PDFs incrementales |
-
-## Captura de contexto (estilo PSR)
-
-Al detectar cada evento de sincronizacion, el script captura automaticamente:
-
-- **Ventana activa**: titulo exacto de la ventana de Outlook
-- **Elemento enfocado**: nombre y tipo del control UIA (ej. `Enviar y recibir todas las carpetas (Botón)`)
-- **Captura de pantalla**: imagen PNG del area de la ventana de Outlook
-
-## Guardado incremental
-
-Cada evento se guarda inmediatamente en `eventos.jsonl` (formato append):
-
-```json
-{"timestamp":"2026-05-29T15:00:00","accion":"Inicio de Sincronizacion: Grupo 1","ventana":"Bandeja de entrada - Outlook","elemento_foco":"Enviar y recibir todas las carpetas (Botón)","ruta_captura":"..."}
+# Como ejecutable (sin Python)
+dist\outlook_sync_monitor.exe
+dist\outlook_sync_monitor_noconsole.exe
+dist\close_monitor.exe
 ```
 
-## Generacion de PDF
-
-- Al **iniciar** el programa, se genera un PDF incremental con los eventos no incluidos aun.
-- Al presionar `Ctrl+C` (version console), tambien se genera el PDF.
-- Si ya existe un PDF, solo se anaden los eventos nuevos (sin duplicados).
-
-## Auto-reconexion
-
-Si cierras y vuelves a abrir Outlook, el monitor se reconecta automaticamente en 5 segundos:
-
-```
-[2026-05-29 15:00:00] - Conexion perdida (Outlook cerrado). Reintentando en 5s...
-[2026-05-29 15:00:05] - Monitor conectado a Outlook.
-```
-
-## Compilar desde codigo fuente
+## Compilación
 
 ```powershell
-pip install pyinstaller pywin32 pywinauto pillow fpdf2
+# outlook_sync_monitor (consola, Ctrl+C para detener)
+pyinstaller --onefile --console --collect-all pywinauto --collect-all PIL --collect-all fpdf --hidden-import=win32com --hidden-import=pythoncom --hidden-import=pywinauto --hidden-import=PIL --hidden-import=PIL.ImageGrab --hidden-import=fpdf --workpath "%TEMP%\opencode\pyi_build" --specpath "%TEMP%\opencode" --distpath dist --name outlook_sync_monitor outlook_sync_monitor.py
 
-:: Con consola
-pyinstaller --onefile --console ^
-  --hidden-import=win32com --hidden-import=pythoncom ^
-  --hidden-import=win32com.client --hidden-import=pywinauto ^
-  --hidden-import=PIL --hidden-import=PIL.ImageGrab ^
-  --hidden-import=fpdf --collect-all pywinauto ^
-  --collect-all PIL --collect-all fpdf ^
-  outlook_sync_monitor.py
+# outlook_sync_monitor (sin consola, matar desde Task Manager)
+pyinstaller --onefile --noconsole --collect-all pywinauto --collect-all PIL --collect-all fpdf --hidden-import=win32com --hidden-import=pythoncom --hidden-import=pywinauto --hidden-import=PIL --hidden-import=PIL.ImageGrab --hidden-import=fpdf --workpath "%TEMP%\opencode\pyi_build_nc" --specpath "%TEMP%\opencode" --distpath dist --name outlook_sync_monitor_noconsole outlook_sync_monitor.py
 
-:: Sin consola
-pyinstaller --onefile --noconsole ^
-  --hidden-import=win32com --hidden-import=pythoncom ^
-  --hidden-import=win32com.client --hidden-import=pywinauto ^
-  --hidden-import=PIL --hidden-import=PIL.ImageGrab ^
-  --hidden-import=fpdf --collect-all pywinauto ^
-  --collect-all PIL --collect-all fpdf ^
-  outlook_sync_monitor.py
+# close_monitor
+pyinstaller --onefile --console --collect-all fpdf --hidden-import=fpdf --workpath "%TEMP%\opencode\pyi_build_close" --specpath "%TEMP%\opencode" --distpath dist --name close_monitor close_monitor.py
 ```
 
-## Estructura del proyecto
+## Dependencias
 
-```
-outlook_sync_monitor.py              # Script principal
-outlook_log.txt                       # Log de texto plano
-eventos.jsonl                         # Log estructurado JSON Lines
-pdf_state.json                         # Estado del PDF incremental
-captures/                             # Capturas de pantalla PNG
-  YYYYMMDD_HHMMSS_ffffff_outlook.png
-dist/
-  outlook_sync_monitor.exe            # Version con consola
-  outlook_sync_monitor_noconsole.exe  # Version sin consola
-README.md                             # Este archivo
-```
+- pywin32
+- pywinauto
+- Pillow
+- fpdf2
+- PyInstaller (solo para compilar)
+
+## Flujo
+
+1. Ejecutar `outlook_sync_monitor.exe` (o la versión noconsole).
+2. El monitor captura cada sincronización de Outlook con contexto visual.
+3. Al cerrar con Ctrl+C o ejecutar `close_monitor.exe`, se genera un PDF completo en `reportes/` y se limpia `eventos.jsonl`.
+4. Si la PC se reinicia o matan el proceso, los datos sobreviven en `eventos.jsonl`. Al reiniciar el monitor, se genera el PDF automáticamente.
