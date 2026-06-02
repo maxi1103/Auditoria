@@ -1,2 +1,16 @@
-dist
-*.jsonl
+# Python cache
+__pycache__/
+*.py[cod]
+
+# Build artifacts
+dist/
+build/
+*.spec
+
+# Project data (generated at runtime)
+captures/
+reportes/
+eventos.jsonl
+outlook_log.txt
+pdf_state.json
+informe_sincronizacion.pdf
