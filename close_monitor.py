@@ -53,10 +53,15 @@ def generar_pdf():
     filename = f"informe_{now:%Y%m%d_%H%M%S}.pdf"
     output_path = REPORTS_DIR / filename
 
+    ts_inicio = entradas[0].get("timestamp", "N/A")[:19]
+    ts_fin = entradas[-1].get("timestamp", "N/A")[:19]
+
     pdf = FPDF()
     pdf.add_page()
     pdf.set_font("Helvetica", "B", 16)
     pdf.cell(0, 10, "Informe de Sincronizacion - Outlook", new_x="LMARGIN", new_y="NEXT", align="C")
+    pdf.set_font("Helvetica", "", 10)
+    pdf.cell(0, 7, f"Inicio: {ts_inicio}     Fin: {ts_fin}", new_x="LMARGIN", new_y="NEXT", align="C")
     pdf.ln(5)
 
     for entry in entradas:
