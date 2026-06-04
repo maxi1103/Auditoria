@@ -1,5 +1,7 @@
 import pythoncom
 import win32com.client
+import win32api
+import win32con
 import datetime
 import time
 import sys
@@ -305,9 +307,24 @@ def connect():
         return None
 
 
+# --- Console control handler (logoff / shutdown) ---
+_ctrl_pdf_generated = False
+
+def ctrl_handler(ctrl_type):
+    global _ctrl_pdf_generated
+    if ctrl_type in (win32con.CTRL_LOGOFF_EVENT, win32con.CTRL_SHUTDOWN_EVENT):
+        if not _ctrl_pdf_generated:
+            _ctrl_pdf_generated = True
+            generar_pdf()
+        return True
+    return False
+
+
 # --- Main ---
 def main():
     pythoncom.CoInitialize()
+
+    win32api.SetConsoleCtrlHandler(ctrl_handler, True)
 
     generar_pdf()
     outlook = None
