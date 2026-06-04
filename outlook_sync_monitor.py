@@ -36,10 +36,32 @@ else:
 CAPTURES_DIR = BASE_DIR / "captures"
 LOG_JSONL = BASE_DIR / "eventos.jsonl"
 LOG_TXT = BASE_DIR / "outlook_log.txt"
-REPORTS_DIR = BASE_DIR / "reportes"
 
 CAPTURES_DIR.mkdir(exist_ok=True)
-REPORTS_DIR.mkdir(exist_ok=True)
+
+# --- Network share for PDF reports ---
+RUTA_RED = r"\\192.168.11.197\test"
+USERNAME = os.environ.get("USERNAME", "unknown")
+NET_USER = ""
+NET_PASS = ""
+
+
+def autenticar_red():
+    if not NET_USER:
+        return True
+    try:
+        import subprocess
+        cmd = ["net", "use", RUTA_RED]
+        if NET_USER:
+            cmd.extend(["/USER:" + NET_USER, NET_PASS])
+        result = subprocess.run(cmd, capture_output=True, text=True, timeout=15)
+        if result.returncode != 0:
+            log_txt(f"Error autenticando red: {result.stderr.strip()}")
+            return False
+        return True
+    except Exception as e:
+        log_txt(f"Error autenticando red: {e}")
+        return False
 
 
 # --- Logging ---
@@ -133,8 +155,10 @@ def generar_pdf():
         return
 
     now = datetime.datetime.now()
-    filename = f"informe_{now:%Y%m%d_%H%M%S}.pdf"
-    output_path = REPORTS_DIR / filename
+    filename = f"{USERNAME}_informe_{now:%Y%m%d_%H%M%S}.pdf"
+
+    autenticar_red()
+    output_path = Path(RUTA_RED) / filename
 
     ts_inicio = entradas[0].get("timestamp", "N/A")[:19]
     ts_fin = entradas[-1].get("timestamp", "N/A")[:19]
@@ -144,7 +168,7 @@ def generar_pdf():
     pdf.set_font("Helvetica", "B", 16)
     pdf.cell(0, 10, "Informe de Sincronizacion - Outlook", new_x="LMARGIN", new_y="NEXT", align="C")
     pdf.set_font("Helvetica", "", 10)
-    pdf.cell(0, 7, f"Inicio: {ts_inicio}     Fin: {ts_fin}", new_x="LMARGIN", new_y="NEXT", align="C")
+    pdf.cell(0, 7, f"Usuario: {USERNAME}      Inicio: {ts_inicio}      Fin: {ts_fin}", new_x="LMARGIN", new_y="NEXT", align="C")
     pdf.ln(5)
 
     for entry in entradas:
@@ -171,9 +195,11 @@ def generar_pdf():
         pdf.ln(5)
 
     try:
+        Path(RUTA_RED).mkdir(parents=True, exist_ok=True)
         pdf.output(str(output_path))
     except Exception as e:
-        log_txt(f"Error al guardar PDF: {e}")
+        log_txt(f"Error al guardar PDF en red ({RUTA_RED}): {e}")
+        print(f"Error al guardar PDF en red: {e}. Los datos NO se pierden, reintente con close_monitor.")
         return
 
     try:
@@ -181,7 +207,7 @@ def generar_pdf():
     except Exception:
         pass
 
-    log_txt(f"PDF generado: {filename} ({len(entradas)} eventos), jsonl limpiado.")
+    log_txt(f"PDF generado: {RUTA_RED}\{filename} ({len(entradas)} eventos), jsonl limpiado.")
     print(f"PDF generado: {filename} ({len(entradas)} eventos), jsonl limpiado.")
 
 
