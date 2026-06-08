@@ -7,6 +7,9 @@ dist/
 build/
 *.spec
 
+# Environment (contains network credentials)
+.env
+
 # Project data (generated at runtime)
 captures/
 reportes/

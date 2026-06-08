@@ -5,6 +5,30 @@ import json
 import os
 from pathlib import Path
 
+
+def load_dotenv():
+    base = Path(sys.executable).parent if getattr(sys, 'frozen', False) else Path(__file__).parent
+    dotenv_path = base / ".env"
+    if not dotenv_path.exists():
+        return
+    try:
+        with dotenv_path.open("r", encoding="utf-8") as f:
+            for line in f:
+                line = line.strip()
+                if not line or line.startswith("#"):
+                    continue
+                if "=" not in line:
+                    continue
+                key, value = line.split("=", 1)
+                key = key.strip()
+                value = value.strip().strip('"\'')
+                os.environ.setdefault(key, value)
+    except Exception:
+        pass
+
+
+load_dotenv()
+
 # --- Paths (same as outlook_sync_monitor.py) ---
 DATA_DIR = Path(os.environ.get('LOCALAPPDATA', Path.cwd())) / "OutlookSyncMonitor"
 
@@ -15,11 +39,11 @@ REPORTS_DIR = DATA_DIR / "reportes"
 DATA_DIR.mkdir(exist_ok=True)
 REPORTS_DIR.mkdir(exist_ok=True)
 
-RUTA_RED = r"\\192.168.11.197\test"
+RUTA_RED = os.environ.get("RUTA_RED", os.environ.get("ruta_red", ""))
 HOSTNAME = os.environ.get("COMPUTERNAME", "unknown")
 USERNAME = os.environ.get("USERNAME", "unknown")
-NET_USER = ""
-NET_PASS = ""
+NET_USER = os.environ.get("NET_USER", "")
+NET_PASS = os.environ.get("NET_PASS", "")
 
 
 def autenticar_red():

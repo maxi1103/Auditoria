@@ -28,26 +28,27 @@ Monitorea las sincronizaciones de Outlook 2010 (eventos `SyncStart`/`SyncEnd`) y
 
 ## Destino de los PDFs
 
-Los informes se guardan en una **carpeta de red compartida** (`\\192.168.11.197\test`).
+Los informes se guardan en una **carpeta de red compartida** y en **local** (`%LOCALAPPDATA%\OutlookSyncMonitor\reportes\`).
 
-Cada archivo incluye el nombre del usuario de Windows para evitar colisiones:
+Cada archivo incluye el nombre del PC y del usuario de Windows para evitar colisiones:
 ```
-juan_informe_20260601_104300.pdf
-maria_informe_20260601_112300.pdf
+PC01_juan_informe_20260601_104300.pdf
+PC02_maria_informe_20260601_112300.pdf
 ```
 
-### Configurar credenciales de red
+### Configurar con .env
 
-Editar las variables al inicio de `outlook_sync_monitor.py` y `close_monitor.py`:
+Crear un archivo `.env` en la misma carpeta que el `.exe`:
 
-```python
-RUTA_RED = r"\\192.168.11.197\test"   # ruta UNC del servidor
-NET_USER = "dominio\\usuario"           # dejar "" si no requiere autenticación
-NET_PASS = "contraseña"                # dejar "" si no requiere autenticación
+```ini
+RUTA_RED=\\192.168.11.197\test
+NET_USER=
+NET_PASS=
 ```
 
 - Si `NET_USER` está vacío, no intenta autenticarse (asume permisos de usuario actual o acceso anónimo).
-- Si la red no está disponible, el PDF **no se genera** y los datos se conservan en `eventos.jsonl` para reintentar después con `close_monitor.exe`.
+- Si la red no está disponible, el PDF se guarda solo en local y los datos se conservan en `eventos.jsonl`.
+- El `.env` se excluye del repositorio (.gitignore).
 
 ## Uso
 
@@ -86,7 +87,7 @@ pyinstaller --onefile --console --collect-all fpdf --hidden-import=fpdf --workpa
 ## Flujo multi-usuario
 
 1. Cada usuario Windows ejecuta `outlook_sync_monitor.exe`.
-2. Los datos locales (`eventos.jsonl`, `captures/`, `outlook_log.txt`) se guardan donde esté el `.exe`.
-3. Al cerrar con Ctrl+C o ejecutar `close_monitor.exe`, se genera el PDF en la carpeta de red con el nombre del usuario.
+2. Los datos locales (`eventos.jsonl`, `captures/`, `outlook_log.txt`) se guardan en `%LOCALAPPDATA%\OutlookSyncMonitor\` — aislado por usuario automáticamente.
+3. Al cerrar (Ctrl+C, logoff, shutdown) o ejecutar `close_monitor.exe`, se genera el PDF en la carpeta de red y en local.
 4. Si la PC se reinicia o matan el proceso, los datos sobreviven localmente. Al reiniciar el monitor, se genera el PDF automáticamente.
-5. Cada usuario tiene sus propios archivos locales, los PDFs se centralizan en la carpeta de red compartida.
+5. Cada usuario tiene sus propios archivos locales, los PDFs se centralizan en `\\ruta_red\test\{HOSTNAME}\`.
