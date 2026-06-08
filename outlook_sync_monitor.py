@@ -30,16 +30,14 @@ except ImportError:
     HAS_FPDF = False
 
 # --- Paths ---
-if getattr(sys, 'frozen', False):
-    BASE_DIR = Path(sys.executable).parent
-else:
-    BASE_DIR = Path.cwd()
+DATA_DIR = Path(os.environ.get('LOCALAPPDATA', Path.cwd())) / "OutlookSyncMonitor"
 
-CAPTURES_DIR = BASE_DIR / "captures"
-LOG_JSONL = BASE_DIR / "eventos.jsonl"
-LOG_TXT = BASE_DIR / "outlook_log.txt"
-REPORTS_DIR = BASE_DIR / "reportes"
+CAPTURES_DIR = DATA_DIR / "captures"
+LOG_JSONL = DATA_DIR / "eventos.jsonl"
+LOG_TXT = DATA_DIR / "outlook_log.txt"
+REPORTS_DIR = DATA_DIR / "reportes"
 
+DATA_DIR.mkdir(exist_ok=True)
 CAPTURES_DIR.mkdir(exist_ok=True)
 REPORTS_DIR.mkdir(exist_ok=True)
 

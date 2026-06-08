@@ -6,14 +6,13 @@ import os
 from pathlib import Path
 
 # --- Paths (same as outlook_sync_monitor.py) ---
-if getattr(sys, 'frozen', False):
-    BASE_DIR = Path(sys.executable).parent
-else:
-    BASE_DIR = Path.cwd()
+DATA_DIR = Path(os.environ.get('LOCALAPPDATA', Path.cwd())) / "OutlookSyncMonitor"
 
-LOG_JSONL = BASE_DIR / "eventos.jsonl"
-LOG_TXT = BASE_DIR / "outlook_log.txt"
-REPORTS_DIR = BASE_DIR / "reportes"
+LOG_JSONL = DATA_DIR / "eventos.jsonl"
+LOG_TXT = DATA_DIR / "outlook_log.txt"
+REPORTS_DIR = DATA_DIR / "reportes"
+
+DATA_DIR.mkdir(exist_ok=True)
 REPORTS_DIR.mkdir(exist_ok=True)
 
 RUTA_RED = r"\\192.168.11.197\test"
