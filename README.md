@@ -67,10 +67,10 @@ dist\close_monitor.exe
 
 ```powershell
 # outlook_sync_monitor (consola, Ctrl+C para detener)
-pyinstaller --onefile --console --collect-all pywinauto --collect-all PIL --collect-all fpdf --hidden-import=win32com --hidden-import=pythoncom --hidden-import=pywinauto --hidden-import=PIL --hidden-import=PIL.ImageGrab --hidden-import=fpdf --workpath "%TEMP%\opencode\pyi_build" --specpath "%TEMP%\opencode" --distpath dist --name outlook_sync_monitor outlook_sync_monitor.py
+pyinstaller --onefile --console --collect-all PIL --collect-all fpdf --hidden-import=win32com --hidden-import=pythoncom --hidden-import=PIL --hidden-import=PIL.ImageGrab --hidden-import=fpdf --workpath "%TEMP%\opencode\pyi_build" --specpath "%TEMP%\opencode" --distpath dist --name outlook_sync_monitor outlook_sync_monitor.py
 
 # outlook_sync_monitor (sin consola, matar desde Task Manager)
-pyinstaller --onefile --noconsole --collect-all pywinauto --collect-all PIL --collect-all fpdf --hidden-import=win32com --hidden-import=pythoncom --hidden-import=pywinauto --hidden-import=PIL --hidden-import=PIL.ImageGrab --hidden-import=fpdf --workpath "%TEMP%\opencode\pyi_build_nc" --specpath "%TEMP%\opencode" --distpath dist --name outlook_sync_monitor_noconsole outlook_sync_monitor.py
+pyinstaller --onefile --noconsole --collect-all PIL --collect-all fpdf --hidden-import=win32com --hidden-import=pythoncom --hidden-import=PIL --hidden-import=PIL.ImageGrab --hidden-import=fpdf --workpath "%TEMP%\opencode\pyi_build_nc" --specpath "%TEMP%\opencode" --distpath dist --name outlook_sync_monitor_noconsole outlook_sync_monitor.py
 
 # close_monitor
 pyinstaller --onefile --console --collect-all fpdf --hidden-import=fpdf --workpath "%TEMP%\opencode\pyi_build_close" --specpath "%TEMP%\opencode" --distpath dist --name close_monitor close_monitor.py
@@ -79,7 +79,6 @@ pyinstaller --onefile --console --collect-all fpdf --hidden-import=fpdf --workpa
 ## Dependencias
 
 - pywin32
-- pywinauto
 - Pillow
 - fpdf2
 - PyInstaller (solo para compilar)

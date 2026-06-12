@@ -160,7 +160,8 @@ def capture_context():
                 ctx["ruta_captura"] = str(filepath)
     except Exception as e:
         log_txt(f"capture screenshot: {e}")
-
+    log_txt(f"Contexto capturado: ventana='{ctx['ventana']}', foco='{ctx['elemento_foco']}', captura='{ctx['ruta_captura']}'")
+    print(f"Contexto capturado: ventana='{ctx['ventana']}', foco='{ctx['elemento_foco']}', captura='{ctx['ruta_captura']}'")
     return ctx
 
 
@@ -365,7 +366,7 @@ def main():
             if outlook is None:
                 outlook = connect()
                 if outlook is None:
-                    time.sleep(5)
+                    time.sleep(0.5)
                     continue
                 handlers = subscribe_events(outlook)
                 if not handlers:
@@ -385,21 +386,21 @@ def main():
             if ping_interval >= 30:
                 ping_interval = 0
                 if not is_outlook_running():
-                    log_txt("Conexion perdida (Outlook cerrado). Reintentando en 5s...")
-                    print("Conexion perdida (Outlook cerrado). Reintentando en 5s...")
+                    log_txt("Conexion perdida (Outlook cerrado). Reintentando...")
+                    print("Conexion perdida (Outlook cerrado). Reintentando...")
                     handlers.clear()
                     del outlook
                     outlook = None
-                    time.sleep(5)
+                    time.sleep(0.5)
 
         except (pythoncom.com_error, AttributeError):
-            log_txt("Conexion perdida (error COM). Reintentando en 5s...")
-            print("Conexion perdida (error COM). Reintentando en 5s...")
+            log_txt("Conexion perdida (error COM). Reintentando...")
+            print("Conexion perdida (error COM). Reintentando...")
             handlers.clear()
             if outlook is not None:
                 del outlook
                 outlook = None
-            time.sleep(5)
+            time.sleep(0.5)
 
         except KeyboardInterrupt:
             log_txt("Monitor detenido por el usuario.")
