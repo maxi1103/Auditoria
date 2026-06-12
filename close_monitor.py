@@ -145,14 +145,14 @@ def generar_pdf():
         red_dir.mkdir(parents=True, exist_ok=True)
         (red_dir / filename).write_bytes(pdf_bytes)
         red_ok = True
-        log_txt(f"close_monitor: PDF en red: {red_dir}\{filename}")
+        log_txt(f"close_monitor: PDF en red: {red_dir}\\{filename}")
     except Exception as e:
-        log_txt(f"close_monitor: Error al guardar PDF en red \\{RUTA_RED}\{HOSTNAME}: {e}")
+        log_txt(f"close_monitor: Error al guardar PDF en red {RUTA_RED}\\{HOSTNAME}: {e}")
 
     try:
         (REPORTS_DIR / filename).write_bytes(pdf_bytes)
         local_ok = True
-        log_txt(f"close_monitor: PDF local: {REPORTS_DIR}\{filename}")
+        log_txt(f"close_monitor: PDF local: {REPORTS_DIR}\\{filename}")
     except Exception as e:
         log_txt(f"close_monitor: Error al guardar PDF local: {e}")
 

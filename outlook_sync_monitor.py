@@ -12,12 +12,6 @@ from pathlib import Path
 
 # --- Optional dependencies ---
 try:
-    import pywinauto
-    HAS_PYWAUTO = True
-except ImportError:
-    HAS_PYWAUTO = False
-
-try:
     from PIL import ImageGrab
     HAS_PIL = True
 except ImportError:
@@ -117,45 +111,55 @@ def capture_context():
         "ruta_captura": ""
     }
 
-    if not HAS_PYWAUTO or not HAS_PIL:
-        return ctx
-
-    try:
-        app = pywinauto.Application(backend="uia").connect(
-            title_re=".*Outlook.*", timeout=3
-        )
-        dlg = app.top_window()
-        ctx["ventana"] = dlg.window_text()
-    except Exception as e:
-        log_txt(f"capture_context ventana: {e}")
-        print(f"capture_context ventana: {e}")
+    if not HAS_PIL:
         return ctx
 
     try:
         import win32gui
-        hwnd = win32gui.GetForegroundWindow()
-        if hwnd:
-            text = win32gui.GetWindowText(hwnd)
-            cls = win32gui.GetClassName(hwnd)
-            ctx["elemento_foco"] = f"{text} ({cls})" if text else f"({cls})"
+    except ImportError:
+        return ctx
+
+    hwnd = None
+    def _enum_cb(w, _):
+        nonlocal hwnd
+        if win32gui.IsWindowVisible(w) and "Outlook" in win32gui.GetWindowText(w):
+            hwnd = w
+            return False
+        return True
+    try:
+        win32gui.EnumWindows(_enum_cb, None)
     except Exception as e:
-        log_txt(f"capture_context foco: {e}")
-        print(f"capture_context foco: {e}")
+        log_txt(f"capture enum: {e}")
+
+    if hwnd is None:
+        return ctx
 
     try:
-        rect = dlg.rectangle()
-        if rect.width() > 0 and rect.height() > 0:
-            img = ImageGrab.grab(bbox=(
-                rect.left, rect.top, rect.right, rect.bottom
-            ))
-            ts = datetime.datetime.now().strftime("%Y%m%d_%H%M%S_%f")
-            filename = f"{ts}_outlook.png"
-            filepath = CAPTURES_DIR / filename
-            img.save(filepath)
-            ctx["ruta_captura"] = str(filepath)
+        ctx["ventana"] = win32gui.GetWindowText(hwnd)
     except Exception as e:
-        log_txt(f"capture_context captura: {e}")
-        print(f"capture_context captura: {e}")
+        log_txt(f"capture ventana: {e}")
+
+    try:
+        fg = win32gui.GetForegroundWindow()
+        if fg:
+            text = win32gui.GetWindowText(fg)
+            cls = win32gui.GetClassName(fg)
+            ctx["elemento_foco"] = f"{text} ({cls})" if text else f"({cls})"
+    except Exception as e:
+        log_txt(f"capture foco: {e}")
+
+    try:
+        if not win32gui.IsIconic(hwnd):
+            left, top, right, bottom = win32gui.GetWindowRect(hwnd)
+            if right > left and bottom > top:
+                img = ImageGrab.grab(bbox=(left, top, right, bottom))
+                ts = datetime.datetime.now().strftime("%Y%m%d_%H%M%S_%f")
+                filename = f"{ts}_outlook.png"
+                filepath = CAPTURES_DIR / filename
+                img.save(filepath)
+                ctx["ruta_captura"] = str(filepath)
+    except Exception as e:
+        log_txt(f"capture screenshot: {e}")
 
     return ctx
 
@@ -230,14 +234,14 @@ def generar_pdf():
         red_dir.mkdir(parents=True, exist_ok=True)
         (red_dir / filename).write_bytes(pdf_bytes)
         red_ok = True
-        log_txt(f"PDF en red: {red_dir}\{filename}")
+        log_txt(f"PDF en red: {red_dir}\\{filename}")
     except Exception as e:
-        log_txt(f"Error al guardar PDF en red \\{RUTA_RED}\{HOSTNAME}: {e}")
+        log_txt(f"Error al guardar PDF en red {RUTA_RED}\\{HOSTNAME}: {e}")
 
     try:
         (REPORTS_DIR / filename).write_bytes(pdf_bytes)
         local_ok = True
-        log_txt(f"PDF local: {REPORTS_DIR}\{filename}")
+        log_txt(f"PDF local: {REPORTS_DIR}\\{filename}")
     except Exception as e:
         log_txt(f"Error al guardar PDF local: {e}")
 
